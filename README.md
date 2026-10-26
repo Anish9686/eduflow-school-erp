@@ -1,6 +1,6 @@
 # EduFlow — Enterprise School ERP Portal
 
-[![Build & Tests](https://github.com/anish/eduflow-erp/actions/workflows/ci.yml/badge.svg)](https://github.com/anish/eduflow-erp/actions/workflows/ci.yml)
+[![Build & Tests](https://github.com/Anish9686/eduflow-school-erp/actions/workflows/ci.yml/badge.svg)](https://github.com/Anish9686/eduflow-school-erp/actions/workflows/ci.yml)
 [![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://react.dev/)

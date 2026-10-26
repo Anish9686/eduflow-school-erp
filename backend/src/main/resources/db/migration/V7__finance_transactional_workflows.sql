@@ -1,10 +1,16 @@
 ALTER TABLE fee_demands
-    ADD COLUMN billing_period DATE NULL,
+    ADD COLUMN billing_period DATE NULL;
+
+ALTER TABLE fee_demands
     ADD CONSTRAINT uq_fee_demand_period UNIQUE (student_id, fee_structure_id, session_id, billing_period);
 
 ALTER TABLE fee_structures
-    ADD COLUMN effective_from DATE NOT NULL DEFAULT '1970-01-01',
-    ADD COLUMN effective_to DATE NULL,
+    ADD COLUMN effective_from DATE NOT NULL DEFAULT '1970-01-01';
+
+ALTER TABLE fee_structures
+    ADD COLUMN effective_to DATE NULL;
+
+ALTER TABLE fee_structures
     ADD CONSTRAINT chk_fee_structure_effective_dates CHECK (effective_to IS NULL OR effective_to >= effective_from);
 
 CREATE TABLE finance_adjustments (

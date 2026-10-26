@@ -1,3 +1,4 @@
+
 -- V2 completes the requested ERP schema without changing the V1 baseline.
 -- V1's section_subjects, timetable_slots, fee_discounts, hostel_rooms, and
 -- hostel_allocations remain intact for compatibility with existing code/data.
@@ -195,8 +196,13 @@ CREATE TABLE application_settings (
 -- MySQL has no partial unique indexes. A NULL generated guard leaves historic
 -- non-active rows unrestricted while enforcing one ACTIVE occupant per bed.
 ALTER TABLE hostel_allocations
-    DROP INDEX uq_hostel_bed_active,
+    DROP INDEX uq_hostel_bed_active;
+
+ALTER TABLE hostel_allocations
     ADD COLUMN active_bed_guard TINYINT
-        GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END) STORED,
+        GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END) STORED;
+
+ALTER TABLE hostel_allocations
     ADD UNIQUE KEY uq_hostel_active_bed_session (room_id, bed_no, session_id, active_bed_guard)
         COMMENT 'Prevent concurrent active occupants of one bed; retain any number of inactive history rows';
+

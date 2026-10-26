@@ -1,7 +1,11 @@
 -- Link portal accounts to parent/guardian records so guardian reads can be scoped.
 ALTER TABLE guardians
-    ADD COLUMN user_id BIGINT NULL AFTER email,
-    ADD CONSTRAINT uq_guardians_user UNIQUE (user_id),
+    ADD COLUMN user_id BIGINT NULL AFTER email;
+
+ALTER TABLE guardians
+    ADD CONSTRAINT uq_guardians_user UNIQUE (user_id);
+
+ALTER TABLE guardians
     ADD CONSTRAINT fk_guardians_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 -- Support guardian-to-student scope checks and per-student document retrieval.

@@ -1,0 +1,135 @@
+{
+  "info": {
+    "name": "ERP Finance Module",
+    "description": "Finance API verification for fee structures, demand generation, payments and receipts, adjustments, discount/expense approvals, reporting, reconciliation and export permissions. Configure a populated student, active enrollment, active academic session, class, fee category and role-specific tokens before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "refundToken", "value": "" },
+    { "key": "discountRequesterToken", "value": "" },
+    { "key": "discountApproverToken", "value": "" },
+    { "key": "expenseRequesterToken", "value": "" },
+    { "key": "expenseApproverToken", "value": "" },
+    { "key": "sessionId", "value": "" },
+    { "key": "classId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "studentId", "value": "" },
+    { "key": "feeStructureId", "value": "" },
+    { "key": "demandId", "value": "" },
+    { "key": "paymentId", "value": "" },
+    { "key": "secondPaymentId", "value": "" },
+    { "key": "discountId", "value": "" },
+    { "key": "expenseId", "value": "" },
+    { "key": "from", "value": "2026-10-01" },
+    { "key": "to", "value": "2026-10-31" }
+  ],
+  "item": [
+    {
+      "name": "Create effective-dated fee structure",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"classId\": {{classId}},\n  \"categoryId\": {{categoryId}},\n  \"amount\": 100.00,\n  \"dueDate\": \"2026-10-10\",\n  \"effectiveFrom\": \"2026-10-01\",\n  \"effectiveTo\": null,\n  \"frequency\": \"MONTHLY\"\n}" },
+        "url": "{{baseUrl}}/api/v1/finance/structures"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Structure created', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.collectionVariables.set('feeStructureId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Generate demand for enrolled student",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"studentId\": {{studentId}},\n  \"feeStructureId\": {{feeStructureId}},\n  \"billingPeriod\": \"2026-10-06\"\n}" },
+        "url": "{{baseUrl}}/api/v1/finance/demands"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Demand created', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.collectionVariables.set('demandId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Post payment and issue receipt atomically",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"demandId\": {{demandId}},\n  \"referenceNo\": \"FIN-POSTMAN-001\",\n  \"amount\": 25.00,\n  \"paymentMethod\": \"UPI\",\n  \"paymentDate\": \"2026-10-06\",\n  \"remarks\": \"Postman finance verification\"\n}" },
+        "url": "{{baseUrl}}/api/v1/finance/payments"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Payment posted', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.collectionVariables.set('paymentId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Repeat same payment reference idempotently",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"demandId\": {{demandId}},\n  \"referenceNo\": \"FIN-POSTMAN-001\",\n  \"amount\": 25.00,\n  \"paymentMethod\": \"UPI\",\n  \"paymentDate\": \"2026-10-06\",\n  \"remarks\": \"Postman finance verification\"\n}" },
+        "url": "{{baseUrl}}/api/v1/finance/payments"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Duplicate submission creates no second payment', () => pm.response.to.have.status(201));", "pm.test('Original payment id returned', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('paymentId')));"] } }]
+    },
+    {
+      "name": "Overpayment is rejected",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"demandId\": {{demandId}},\n  \"referenceNo\": \"FIN-POSTMAN-OVER\",\n  \"amount\": 999999.99,\n  \"paymentMethod\": \"CASH\",\n  \"paymentDate\": \"2026-10-06\"\n}" },
+        "url": "{{baseUrl}}/api/v1/finance/payments"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Overpayment rejected', () => pm.response.to.have.status(409));"] } }]
+    },
+    {
+      "name": "Read printable receipt",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/finance/receipts/{{paymentId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Receipt exists', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "Cashier without refund permission is denied",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Authorization check\"}" }, "url": "{{baseUrl}}/api/v1/finance/payments/{{paymentId}}/refund" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Refund authorization enforced', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "Authorized refund preserves evidence",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{refundToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Finance verification refund\"}" }, "url": "{{baseUrl}}/api/v1/finance/payments/{{paymentId}}/refund" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Refund recorded', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Request discount",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{discountRequesterToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"demandId\": {{demandId}},\n  \"amount\": 10.00,\n  \"reason\": \"Need-based concession\"\n}" }, "url": "{{baseUrl}}/api/v1/finance/discounts" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Discount request is pending', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.collectionVariables.set('discountId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Approve discount as different user",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{discountApproverToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Approved by independent reviewer\"}" }, "url": "{{baseUrl}}/api/v1/finance/discounts/{{discountId}}/approve" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Discount approved', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Create expense draft",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{expenseRequesterToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"category\": \"Supplies\",\n  \"description\": \"Finance workflow verification\",\n  \"amount\": 15.25,\n  \"expenseDate\": \"2026-10-06\",\n  \"vendor\": \"Postman vendor\"\n}" }, "url": "{{baseUrl}}/api/v1/finance/expenses" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Expense draft created', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.collectionVariables.set('expenseId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Submit expense",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{expenseRequesterToken}}" }], "url": "{{baseUrl}}/api/v1/finance/expenses/{{expenseId}}/submit" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Expense submitted for approval', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Approve expense as different user",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{expenseApproverToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"reason\":\"Invoice verified\"}" }, "url": "{{baseUrl}}/api/v1/finance/expenses/{{expenseId}}/approve" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Expense approved', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Read finance summary",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/finance/reports?from={{from}}&to={{to}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Finance summary derives from transactions', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "Reconcile demand ledger",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/finance/reconciliation" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Reconciliation available', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "Export payments with export permission",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/finance/export?from={{from}}&to={{to}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Export requires FINANCE_REPORT:EXPORT', () => pm.response.to.have.status(200));", "pm.test('CSV content type', () => pm.response.to.have.header('Content-Type')); "] } }]
+    }
+  ]
+}

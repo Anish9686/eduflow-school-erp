@@ -1,0 +1,508 @@
+{
+  "info": {
+    "name": "ERP Administration Module",
+    "description": "Comprehensive API verification for REQ-USER-001 and REQ-ADM-001..008. Covers User Management, Roles & Permissions, Audit Logging, System Settings, Bulk Import, and Data Scope Export.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "username", "value": "root-admin" },
+    { "key": "password", "value": "S3cure-test-password!" },
+    { "key": "token", "value": "" },
+    { "key": "adminUserId", "value": "" },
+    { "key": "roleCode", "value": "CAMPUS_DIRECTOR" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login Super Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login successful', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "  var res = pm.response.json();",
+              "  pm.collectionVariables.set('token', res.accessToken);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alex.admin\",\n  \"email\": \"alex.admin@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Alex Administrator\",\n  \"phone\": \"+1-555-0199\",\n  \"roleCodes\": [\"ADMIN\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User created successfully', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  var data = pm.response.json();",
+                  "  pm.collectionVariables.set('adminUserId', data.id);",
+                  "  pm.expect(data.username).to.eql('alex.admin');",
+                  "  pm.expect(data).to.not.have.property('password');",
+                  "  pm.expect(data).to.not.have.property('passwordHash');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Users (Paginated & Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/users?search=alex&status=ACTIVE&page=0&size=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User list returned', () => pm.response.to.have.status(200));",
+                  "pm.test('Contains page metadata', () => {",
+                  "  var body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('content');",
+                  "  pm.expect(body).to.have.property('totalElements');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User detail found', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().username).to.eql('alex.admin');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alex.newemail@example.com\",\n  \"fullName\": \"Alexander Administrator\",\n  \"phone\": \"+1-555-9999\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User updated', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().fullName).to.eql('Alexander Administrator');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lock User Account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LOCKED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User status updated to LOCKED', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('LOCKED');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlock User Account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User status updated to ACTIVE', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('ACTIVE');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign Roles to User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleCodes\": [\"TEACHER\", \"LIBRARIAN\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/users/{{adminUserId}}/roles"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Roles updated', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roles & Permissions",
+      "item": [
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{roleCode}}\",\n  \"name\": \"Campus Director\",\n  \"description\": \"Manages general campus operations\",\n  \"permissionCodes\": [\"USER:READ\", \"SETTINGS:READ\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/roles"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Role created', () => pm.response.to.have.status(201));",
+                  "pm.expect(pm.response.json().code).to.eql(pm.collectionVariables.get('roleCode'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/roles"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Roles listed', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().length).to.be.above(0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Role Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/roles/{{roleCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Role detail found', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Role Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionCodes\": [\"USER:READ\", \"AUDIT:READ\", \"SETTINGS:READ\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/roles/{{roleCode}}/permissions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Role permissions updated', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List All Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/permissions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Permissions listed', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()[0]).to.have.property('code');",
+                  "pm.expect(pm.response.json()[0]).to.have.property('module');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs",
+      "item": [
+        {
+          "name": "Query Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/audit-logs?action=USER&page=0&size=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Audit logs retrieved', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.have.property('content');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "System Settings",
+      "item": [
+        {
+          "name": "List Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/settings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Settings listed', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().length).to.be.above(0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update System Setting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"Acme Metropolitan Academy\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/settings/institution.name"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Setting updated', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().value).to.eql('Acme Metropolitan Academy');",
+                  "pm.expect(pm.response.json().version).to.be.above(1);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Import & Export",
+      "item": [
+        {
+          "name": "Bulk Import Users (CSV Body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "text/csv" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "username,email,password,full_name,phone,roles\nimport.user1,import1@school.edu,Password123!,Import User 1,+111,TEACHER\nimport.user2,import2@school.edu,Password123!,Import User 2,+222,STUDENT\nbad_record,invalid-email,short,Bad User,+333,TEACHER"
+            },
+            "url": "{{baseUrl}}/api/v1/admin/import/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Import executed with row validation', () => pm.response.to.have.status(200));",
+                  "var res = pm.response.json();",
+                  "pm.expect(res.totalRows).to.eql(3);",
+                  "pm.expect(res.successCount).to.eql(2);",
+                  "pm.expect(res.failureCount).to.eql(1);",
+                  "pm.expect(res.errors[0].rowNumber).to.eql(4);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export Users (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/export/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Users exported as CSV', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "pm.expect(pm.response.text()).to.include('username,email');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export Audit Logs (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/export/audit-logs"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Audit logs exported as CSV', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "pm.expect(pm.response.text()).to.include('timestamp,actorUsername,action');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

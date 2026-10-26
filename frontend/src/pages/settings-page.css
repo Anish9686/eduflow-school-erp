@@ -1,0 +1,69 @@
+.settings-page { display: grid; gap: 22px; min-width: 0; }
+.settings-category-section, .settings-list { min-width: 0; }
+.settings-category-heading { margin-bottom: 12px; }
+.settings-category-heading h2, .settings-list-heading h2 { margin: 0; color: var(--text); font-size: 1rem; letter-spacing: -.015em; }
+.settings-category-heading p, .settings-list-heading p { margin: 5px 0 0; color: var(--muted); font-size: .85rem; line-height: 1.5; }
+.settings-category-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: thin; }
+.settings-category-tabs button { flex: 0 0 auto; min-height: 42px; padding: 9px 14px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; font-size: .875rem; font-weight: 650; white-space: nowrap; cursor: pointer; transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast); }
+.settings-category-tabs button:hover:not([aria-selected="true"]) { color: var(--text); background: var(--surface-muted); }
+.settings-category-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent); }
+.settings-list { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
+.settings-list-heading { padding: 17px 20px; border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.settings-item { display: grid; gap: 15px; padding: 19px 20px; border-bottom: 1px solid var(--border); }
+.settings-item:last-child { border-bottom: 0; }
+.settings-item-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.settings-item-heading h3 { margin: 0; color: var(--text); font-size: .9rem; font-weight: 650; overflow-wrap: anywhere; }
+.settings-item-heading p { margin: 5px 0 0; color: var(--muted); font-size: .825rem; line-height: 1.5; }
+.settings-version { flex: 0 0 auto; padding: 4px 8px; border-radius: var(--radius-sm); color: var(--muted); background: var(--surface-muted); font-size: .72rem; font-weight: 650; }
+.settings-item-value { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-width: 0; }
+.settings-item-value strong { min-width: 0; color: var(--text); font-size: .925rem; font-weight: 550; overflow-wrap: anywhere; white-space: pre-wrap; }
+.settings-item-meta { margin: -4px 0 0; color: var(--muted); font-size: .75rem; }
+.settings-edit-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; }
+.settings-edit-form label { grid-column: 1 / -1; color: var(--text); font-size: .825rem; font-weight: 650; }
+.settings-edit-form input { width: 100%; min-width: 0; min-height: 40px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); background: var(--surface); }
+.settings-edit-form input:focus-visible { border-color: var(--focus); outline: 3px solid color-mix(in srgb, var(--focus) 22%, transparent); outline-offset: 1px; }
+.settings-edit-actions { display: flex; gap: 8px; }
+.settings-loading, .settings-empty { padding: 28px 20px; border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--muted); background: var(--surface); text-align: center; }
+@media (max-width: 560px) {
+  .settings-page { gap: 18px; }
+  .settings-list-heading, .settings-item { padding-inline: 15px; }
+  .settings-item-heading { gap: 8px; }
+  .settings-edit-form { grid-template-columns: minmax(0, 1fr); }
+  .settings-edit-form label { grid-column: auto; }
+  .settings-edit-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .settings-edit-actions .ds-button { width: 100%; }
+}
+
+.settings-password-card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 18px;
+}
+.settings-password-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -.015em;
+}
+.settings-password-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.settings-password-form {
+  display: grid;
+  gap: 16px;
+  max-width: 460px;
+}
+.settings-password-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+

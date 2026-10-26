@@ -1,0 +1,71 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: erp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: erp_portal_db
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-dev_root_secret_9661}
+      MYSQL_USER: ${DB_USERNAME:-erp_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-dev_secret_9661}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - erp-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:mysql://mysql:3306/erp_portal_db?serverTimezone=UTC&characterEncoding=UTF-8
+      DB_USERNAME: ${DB_USERNAME:-erp_user}
+      DB_PASSWORD: ${DB_PASSWORD:-dev_secret_9661}
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS:-1800}
+      STUDENT_DOCUMENT_STORAGE_DIR: /var/erp/storage/student-documents
+    ports:
+      - "8080:8080"
+    volumes:
+      - student_docs:/var/erp/storage/student-documents
+    networks:
+      - erp-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: erp-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "3000:80"
+    networks:
+      - erp-net
+
+volumes:
+  mysql_data:
+    name: erp_mysql_data
+  student_docs:
+    name: erp_student_docs
+
+networks:
+  erp-net:
+    name: erp_network
+    driver: bridge

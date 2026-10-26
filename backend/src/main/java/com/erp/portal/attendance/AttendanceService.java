@@ -1,0 +1,82 @@
+package com.erp.portal.attendance;
+
+import com.erp.portal.academic.AcademicRepository;
+import com.erp.portal.administration.AuditService;
+import com.erp.portal.attendance.AttendanceDtos.*;
+import com.erp.portal.security.SecurityPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@Service
+public class AttendanceService {
+    private final AttendanceRepository repo;
+    private final AcademicRepository academics;
+    private final AuditService audit;
+    public AttendanceService(AttendanceRepository repo,AcademicRepository academics,AuditService audit){this.repo=repo;this.academics=academics;this.audit=audit;}
+
+    public List<AttendanceRepository.Lookup> sessions(){return repo.sessionOptions();}
+    public List<AttendanceRepository.Lookup> classes(){return repo.classOptions();}
+    public List<AttendanceRepository.SectionLookup> sections(Long classId){return repo.sectionOptions(classId);}
+    public List<AttendanceRepository.Lookup> staff(){return repo.staffOptions();}
+
+    @Transactional(readOnly=true)
+    public List<Enrollment> enrollments(long session,Long classId,Long sectionId,SecurityPrincipal actor){requireAny(actor,"ATTENDANCE:READ","ATTENDANCE:MARK","ATTENDANCE:MANAGE");List<Enrollment> rows=repo.enrollments(session,classId,sectionId);if(actor.roles().contains("TEACHER")){Long staff=repo.staffForUser(actor.userId());if(staff==null)throw AttendanceException.forbidden();return rows.stream().filter(x->academics.isAssignedToSection(staff,session,x.sectionId())).toList();}if(actor.roles().contains("STUDENT")||actor.roles().contains("PARENT_GUARDIAN")||(actor.roles().contains("ACCOUNTANT")&&!actor.roles().contains("SUPER_ADMIN")&&!actor.roles().contains("ADMIN")))throw AttendanceException.forbidden();return rows;}
+    @Transactional(readOnly=true)
+    public List<EligibleStudent> eligibleStudents(long session,String search,SecurityPrincipal actor){require("ATTENDANCE:MANAGE",actor);return repo.eligibleStudents(session,search);}
+    @Transactional
+    public Enrollment enroll(EnrollmentRequest x,SecurityPrincipal actor,HttpServletRequest req){require("ATTENDANCE:MANAGE",actor);requireExists("academic_sessions",x.sessionId());requireExists("classes",x.classId());requireExists("sections",x.sectionId());requireExists("students",x.studentId());if(!repo.activeStudent(x.studentId()))throw AttendanceException.invalid("studentId","Only an active student can be added to an attendance roster");if(!repo.validClassSection(x.classId(),x.sectionId()))throw AttendanceException.invalid("sectionId","Section does not belong to the selected class");if(repo.enrollmentExists(x.sessionId(),x.studentId()))throw AttendanceException.conflict("Student already has an enrollment in this session");try{repo.createEnrollment(x);}catch(DataIntegrityViolationException e){throw AttendanceException.conflict("Student already has an enrollment in this session");}audit.record("ATTENDANCE_ROSTER_ENROLLED","STUDENT_ENROLLMENT",x.sessionId()+":"+x.studentId(),actor,null,null,Map.of("sessionId",x.sessionId(),"studentId",x.studentId(),"classId",x.classId(),"sectionId",x.sectionId()),req);return repo.enrollments(x.sessionId(),x.classId(),x.sectionId()).stream().filter(a->a.studentId()==x.studentId()).findFirst().orElseThrow(()->AttendanceException.notFound("Enrollment"));}
+
+    @Transactional(readOnly=true)
+    public List<RosterStudent> roster(long session,long classId,long section,LocalDate date,SecurityPrincipal actor){requireRead(actor);requireExists("academic_sessions",session);if(!repo.validClassSection(classId,section))throw AttendanceException.invalid("sectionId","Section does not belong to the selected class");ensureSectionScope(actor,session,section);return repo.roster(session,section,date);}
+
+    @Transactional
+    public MarkBatchResult markStudents(StudentMarkBatchRequest x,String idempotencyKey,SecurityPrincipal actor,HttpServletRequest req){requireAny(actor,"ATTENDANCE:MARK","ATTENDANCE:MANAGE");validateKey(idempotencyKey);requireExists("academic_sessions",x.sessionId());if(!repo.sessionContainsDate(x.sessionId(),x.attendanceDate()))throw AttendanceException.invalid("attendanceDate","Date must fall within the selected academic session");if(!repo.validClassSection(x.classId(),x.sectionId()))throw AttendanceException.invalid("sectionId","Section does not belong to the selected class");ensureSectionScope(actor,x.sessionId(),x.sectionId());if(repo.studentLocked(x.sessionId(),x.attendanceDate()))throw AttendanceException.conflict("Attendance date is locked for this session");Set<Long> unique=new HashSet<>();for(StudentMarkEntry e:x.entries())if(!unique.add(e.studentId()))throw AttendanceException.invalid("entries","A student may appear only once in a marking batch");Long markerStaff=repo.staffForUser(actor.userId());List<StudentAttendance> records=new ArrayList<>();int created=0;
+        for(StudentMarkEntry e:x.entries()){if(!repo.activeStudent(e.studentId()))throw AttendanceException.invalid("entries","Only active students can be marked");if(!repo.enrolled(x.sessionId(),e.studentId(),x.classId(),x.sectionId()))throw AttendanceException.forbidden();String key=idempotencyKey+"."+e.studentId();AttendanceRepository.StudentMarkResult result=repo.markStudent(x.sessionId(),x.classId(),x.sectionId(),x.attendanceDate(),e.studentId(),e.status(),e.remarks(),actor.userId(),markerStaff,key);records.add(result.record());if(result.created()){created++;audit.record("STUDENT_ATTENDANCE_MARKED","ATTENDANCE",Long.toString(result.record().id()),actor,null,null,Map.of("sessionId",x.sessionId(),"classId",x.classId(),"sectionId",x.sectionId(),"date",x.attendanceDate(),"status",e.status()),req);}}
+        return new MarkBatchResult(created,records.size()-created,records);}
+
+    @Transactional(readOnly=true)
+    public List<StudentAttendance> studentRecords(LocalDate from,LocalDate to,Long session,Long classId,Long section,Long student,LocalDate date,String status,SecurityPrincipal actor){requireRead(actor);if(from!=null&&to!=null&&from.isAfter(to))throw AttendanceException.invalid("from","Must be on or before to");StudentScope scope=studentScope(actor);return repo.studentRecords(from,to,session,classId,section,student,date,status,scope.studentUser(),scope.guardianUser(),scope.teacherStaff());}
+    @Transactional(readOnly=true)
+    public AttendanceSummary summary(LocalDate date,Long session,Long classId,Long section,SecurityPrincipal actor){List<StudentAttendance> rows=studentRecords(date,date,session,classId,section,null,date,null,actor);return new AttendanceSummary(rows.size(),count(rows,"PRESENT"),count(rows,"ABSENT"),count(rows,"LATE"),count(rows,"HALF_DAY"),count(rows,"EXCUSED"),count(rows,"HOLIDAY"));}
+
+    @Transactional
+    public StudentAttendance correctStudent(long id,AttendanceCorrectionRequest x,SecurityPrincipal actor,HttpServletRequest req){requireAny(actor,"ATTENDANCE:CORRECT","ATTENDANCE:MANAGE");StudentAttendance old=repo.studentAttendance(id).orElseThrow(()->AttendanceException.notFound("Attendance record"));if(!canSeeStudentRecord(old,actor))throw AttendanceException.forbidden();if(repo.studentLocked(old.sessionId(),old.attendanceDate()))throw AttendanceException.conflict("Attendance date is locked; unlock it before correction");if(old.status().equals(x.status()))throw AttendanceException.invalid("status","Correction must change the recorded status");repo.addStudentCorrection(id,old.status(),x.status(),x.reason(),actor.userId());repo.correctStudent(id,x.status(),actor.userId());audit.record("STUDENT_ATTENDANCE_CORRECTED","ATTENDANCE",Long.toString(id),actor,null,Map.of("status",old.status()),Map.of("status",x.status(),"reason",x.reason().trim()),req);return repo.studentAttendance(id).orElseThrow(()->AttendanceException.notFound("Attendance record"));}
+    @Transactional(readOnly=true)
+    public List<AttendanceCorrection> studentCorrectionHistory(long id,SecurityPrincipal actor){requireRead(actor);StudentAttendance row=repo.studentAttendance(id).orElseThrow(()->AttendanceException.notFound("Attendance record"));if(!canSeeStudentRecord(row,actor))throw AttendanceException.forbidden();return repo.studentCorrectionHistory(id);}
+
+    @Transactional
+    public StaffMarkBatchResult markStaff(StaffMarkBatchRequest x,String idempotencyKey,SecurityPrincipal actor,HttpServletRequest req){requireAny(actor,"STAFF_ATTENDANCE:MARK","STAFF_ATTENDANCE:MANAGE");validateKey(idempotencyKey);if(repo.staffLocked(x.attendanceDate()))throw AttendanceException.conflict("Staff attendance date is locked");Set<Long> unique=new HashSet<>();for(StaffMarkEntry e:x.entries())if(!unique.add(e.staffId()))throw AttendanceException.invalid("entries","A staff member may appear only once in a marking batch");List<StaffAttendance> records=new ArrayList<>();int created=0;for(StaffMarkEntry e:x.entries()){if(!repo.activeStaff(e.staffId()))throw AttendanceException.invalid("entries","Only active staff can be marked");String key=idempotencyKey+"."+e.staffId();AttendanceRepository.StaffMarkResult result=repo.markStaff(x.attendanceDate(),e.staffId(),e.status(),e.remarks(),actor.userId(),key);records.add(result.record());if(result.created()){created++;audit.record("STAFF_ATTENDANCE_MARKED","STAFF_ATTENDANCE",Long.toString(result.record().id()),actor,null,null,Map.of("staffId",e.staffId(),"date",x.attendanceDate(),"status",e.status()),req);}}return new StaffMarkBatchResult(created,records.size()-created,records);}
+    @Transactional(readOnly=true)
+    public List<StaffAttendance> staffRecords(LocalDate from,LocalDate to,Long staffId,String status,SecurityPrincipal actor){requireAny(actor,"STAFF_ATTENDANCE:READ","STAFF_ATTENDANCE:MARK","STAFF_ATTENDANCE:MANAGE");if(from!=null&&to!=null&&from.isAfter(to))throw AttendanceException.invalid("from","Must be on or before to");if(actor.permissions().contains("STAFF_ATTENDANCE:MANAGE")||actor.roles().contains("STAFF_ADMIN")||actor.roles().contains("SUPER_ADMIN")||actor.roles().contains("ADMIN"))return repo.staffRecords(from,to,staffId,null,null,status);Long own=repo.staffForUser(actor.userId());if(own!=null)return repo.staffRecords(from,to,staffId,actor.userId(),null,status);throw AttendanceException.forbidden();}
+    @Transactional
+    public StaffAttendance correctStaff(long id,StaffAttendanceCorrectionRequest x,SecurityPrincipal actor,HttpServletRequest req){requireAny(actor,"STAFF_ATTENDANCE:CORRECT","STAFF_ATTENDANCE:MANAGE");StaffAttendance old=repo.staffAttendance(id).orElseThrow(()->AttendanceException.notFound("Staff attendance record"));if(repo.staffLocked(old.attendanceDate()))throw AttendanceException.conflict("Staff attendance date is locked; unlock it before correction");if(old.status().equals(x.status()))throw AttendanceException.invalid("status","Correction must change the recorded status");repo.addStaffCorrection(id,old.status(),x.status(),x.reason(),actor.userId());repo.correctStaff(id,x.status());audit.record("STAFF_ATTENDANCE_CORRECTED","STAFF_ATTENDANCE",Long.toString(id),actor,null,Map.of("status",old.status()),Map.of("status",x.status(),"reason",x.reason().trim()),req);return repo.staffAttendance(id).orElseThrow(()->AttendanceException.notFound("Staff attendance record"));}
+    @Transactional(readOnly=true)
+    public List<StaffAttendanceCorrection> staffCorrectionHistory(long id,SecurityPrincipal actor){requireAny(actor,"STAFF_ATTENDANCE:READ","STAFF_ATTENDANCE:MANAGE");if(repo.staffAttendance(id).isEmpty())throw AttendanceException.notFound("Staff attendance record");return repo.staffCorrectionHistory(id);}
+
+    @Transactional(readOnly=true)
+    public List<DateLock> locks(LocalDate from,LocalDate to,SecurityPrincipal actor){requireAny(actor,"ATTENDANCE:MANAGE","STAFF_ATTENDANCE:MANAGE");return repo.locks(from,to);}
+    @Transactional
+    public DateLock lock(DateLockRequest x,SecurityPrincipal actor,HttpServletRequest req){require(x.scope().equals("STAFF")?"STAFF_ATTENDANCE:MANAGE":"ATTENDANCE:MANAGE",actor);if("STUDENT".equals(x.scope())){if(x.sessionId()==null)throw AttendanceException.invalid("sessionId","Required for student attendance date lock");requireExists("academic_sessions",x.sessionId());}else if(x.sessionId()!=null)throw AttendanceException.invalid("sessionId","Not used for staff attendance date locks");try{long id=repo.createLock(x,actor.userId());audit.record("ATTENDANCE_DATE_LOCKED","ATTENDANCE_DATE_LOCK",Long.toString(id),actor,null,null,Map.of("scope",x.scope(),"date",x.attendanceDate(),"reason",x.reason()),req);return repo.lock(id).orElseThrow(()->AttendanceException.notFound("Attendance date lock"));}catch(DataIntegrityViolationException e){throw AttendanceException.conflict("Attendance date is already locked");}}
+    @Transactional
+    public void unlock(long id,SecurityPrincipal actor,HttpServletRequest req){DateLock lock=repo.lock(id).orElseThrow(()->AttendanceException.notFound("Attendance date lock"));require(lock.scope().equals("STAFF")?"STAFF_ATTENDANCE:MANAGE":"ATTENDANCE:MANAGE",actor);repo.removeLock(id);audit.record("ATTENDANCE_DATE_UNLOCKED","ATTENDANCE_DATE_LOCK",Long.toString(id),actor,null,Map.of("scope",lock.scope(),"date",lock.attendanceDate()),Map.of("unlocked",true),req);}
+
+    private void requireRead(SecurityPrincipal a){requireAny(a,"ATTENDANCE:READ","ATTENDANCE:MARK","ATTENDANCE:MANAGE");}
+    private StudentScope studentScope(SecurityPrincipal a){if(a.roles().contains("ACCOUNTANT")&&!a.roles().contains("SUPER_ADMIN")&&!a.roles().contains("ADMIN"))throw AttendanceException.forbidden();if(a.roles().contains("STUDENT"))return new StudentScope(a.userId(),null,null);if(a.roles().contains("PARENT_GUARDIAN"))return new StudentScope(null,a.userId(),null);if(a.roles().contains("TEACHER")){Long staff=repo.staffForUser(a.userId());if(staff==null)throw AttendanceException.forbidden();return new StudentScope(null,null,staff);}return new StudentScope(null,null,null);}
+    private boolean canSeeStudentRecord(StudentAttendance row,SecurityPrincipal actor){StudentScope s=studentScope(actor);if(s.studentUser()!=null)return repo.studentRecords(row.attendanceDate(),row.attendanceDate(),row.sessionId(),row.classId(),row.sectionId(),row.studentId(),row.attendanceDate(),null,s.studentUser(),null,null).stream().anyMatch(x->x.id()==row.id());if(s.guardianUser()!=null)return repo.studentRecords(row.attendanceDate(),row.attendanceDate(),row.sessionId(),row.classId(),row.sectionId(),row.studentId(),row.attendanceDate(),null,null,s.guardianUser(),null).stream().anyMatch(x->x.id()==row.id());if(s.teacherStaff()!=null)return repo.studentRecords(row.attendanceDate(),row.attendanceDate(),row.sessionId(),row.classId(),row.sectionId(),row.studentId(),row.attendanceDate(),null,null,null,s.teacherStaff()).stream().anyMatch(x->x.id()==row.id());return true;}
+    private void ensureSectionScope(SecurityPrincipal actor,long session,long section){if(actor.roles().contains("TEACHER")){Long staff=repo.staffForUser(actor.userId());if(staff==null||!academics.isAssignedToSection(staff,session,section))throw AttendanceException.forbidden();}else if(actor.roles().contains("STUDENT")||actor.roles().contains("PARENT_GUARDIAN")||(actor.roles().contains("ACCOUNTANT")&&!actor.roles().contains("SUPER_ADMIN")&&!actor.roles().contains("ADMIN")))throw AttendanceException.forbidden();}
+    private record StudentScope(Long studentUser,Long guardianUser,Long teacherStaff) { }
+    private static long count(List<StudentAttendance> rows,String status){return rows.stream().filter(x->status.equals(x.status())).count();}
+    private void requireExists(String table,long id){if(!repo.exists(table,id))throw AttendanceException.notFound("Attendance relationship");}
+    private void require(String permission,SecurityPrincipal a){if(!a.permissions().contains(permission))throw AttendanceException.forbidden();}
+    private void requireAny(SecurityPrincipal a,String...permissions){for(String p:permissions)if(a.permissions().contains(p))return;throw AttendanceException.forbidden();}
+    private static void validateKey(String key){if(key==null||!key.matches("[A-Za-z0-9._:-]{8,80}"))throw AttendanceException.invalid("Idempotency-Key","Provide a unique key between 8 and 80 safe characters");}
+}

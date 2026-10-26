@@ -1,0 +1,424 @@
+/* ============================================================
+   EduFlow Results & Examinations Module Styles
+   Theme-aware, responsive, accessible, dark/light mode supported
+   ============================================================ */
+
+.exam-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* KPI / Overview Grid */
+.exam-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.exam-kpi-card {
+  padding: 1.25rem;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.exam-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.exam-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.exam-kpi-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.exam-kpi-icon {
+  font-size: 1.25rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.exam-kpi-value {
+  font-size: 1.75rem;
+  font-weight: 750;
+  color: var(--text-normal);
+  line-height: 1.1;
+}
+
+.exam-kpi-subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Filter bar */
+.exam-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.exam-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Action buttons */
+.exam-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Marks Entry Table Styling */
+.marks-entry-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle);
+}
+
+.marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.marks-table th {
+  background: var(--surface-muted);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 650;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.marks-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.marks-table tr:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.marks-input {
+  width: 90px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  color: var(--text-normal);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.marks-input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.marks-status-select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  color: var(--text-normal);
+  font-size: 0.85rem;
+}
+
+/* Workflow banner */
+.workflow-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: 1rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.workflow-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.workflow-DRAFT { background: #e2e8f0; color: #475569; }
+.workflow-SUBMITTED { background: #dbeafe; color: #1d4ed8; }
+.workflow-UNDER_REVIEW { background: #fef3c7; color: #b45309; }
+.workflow-APPROVED { background: #dcfce7; color: #15803d; }
+.workflow-REJECTED { background: #fee2e2; color: #b91c1c; }
+.workflow-PUBLISHED { background: #ede9fe; color: #6d28d9; }
+
+/* Report Card Container */
+.report-card-container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.5rem;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.dark .report-card-container {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.report-card-header {
+  text-align: center;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.report-card-school-name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem 0;
+  color: #1e3a8a;
+}
+
+.dark .report-card-school-name {
+  color: #60a5fa;
+}
+
+.report-card-school-address {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.report-card-title {
+  display: inline-block;
+  padding: 0.35rem 1.25rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
+}
+
+.dark .report-card-title {
+  background: #1e293b;
+  color: #93c5fd;
+}
+
+.report-card-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 2rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.report-card-meta-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 0.25rem;
+}
+
+.dark .report-card-meta-item {
+  border-bottom-color: #334155;
+}
+
+.report-card-meta-label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dark .report-card-meta-label {
+  color: #94a3b8;
+}
+
+.report-card-meta-value {
+  font-weight: 700;
+  color: inherit;
+}
+
+.report-card-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.report-card-table th {
+  background: #f1f5f9;
+  padding: 0.65rem 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.dark .report-card-table th {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.report-card-table th:first-child,
+.report-card-table td:first-child {
+  text-align: left;
+}
+
+.report-card-table td {
+  padding: 0.6rem 0.85rem;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+}
+
+.dark .report-card-table td {
+  border-color: #334155;
+}
+
+.report-card-summary-box {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.dark .report-card-summary-box {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.report-card-summary-metric {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.dark .report-card-summary-metric {
+  color: #60a5fa;
+}
+
+.report-card-summary-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.dark .report-card-summary-label {
+  color: #94a3b8;
+}
+
+.report-card-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3.5rem;
+  padding-top: 1rem;
+}
+
+.report-card-signature-line {
+  width: 180px;
+  border-top: 1px solid #64748b;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding-top: 0.35rem;
+}
+
+/* Analytics Distribution Bar */
+.grade-bar-container {
+  display: flex;
+  height: 24px;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-muted);
+  margin-bottom: 0.5rem;
+}
+
+.grade-bar-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: width 0.3s ease;
+}
+
+.grade-A_plus { background: #10b981; }
+.grade-A { background: #3b82f6; }
+.grade-B { background: #f59e0b; }
+.grade-C { background: #f97316; }
+.grade-F { background: #ef4444; }
+
+/* Print styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .report-card-container,
+  .report-card-container * {
+    visibility: visible;
+  }
+  .report-card-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 2cm;
+    box-shadow: none;
+    border: none;
+  }
+  .report-card-actions {
+    display: none !important;
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "info": {
+    "name": "ERP Reporting Framework",
+    "description": "Reporting read and export authorization checks. Set token to a user with STUDENT:READ and REPORT:EXPORT for authorized requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Student report page (authorized)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/reports/student-directory?page=0&size=25&sortBy=createdAt&direction=DESC" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Authorized report read', () => pm.response.to.have.status(200));", "pm.test('Paged report response', () => pm.expect(pm.response.json()).to.have.property('totalElements'));"] } }]
+    },
+    {
+      "name": "Student report CSV export (authorized)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/v1/reports/student-directory/export?format=CSV&async=true" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Export accepted', () => pm.response.to.have.status(202));", "pm.test('Export job id returned', () => pm.expect(pm.response.json()).to.have.property('jobId'));"] } }]
+    },
+    {
+      "name": "Student report unauthorized (no token)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/student-directory" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Unauthenticated report denied', () => pm.expect([401, 403]).to.include(pm.response.code));"] } }]
+    },
+    {
+      "name": "Student report export denied without token",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/student-directory/export?format=XLSX" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('Unauthenticated export denied', () => pm.expect([401, 403]).to.include(pm.response.code));"] } }]
+    }
+  ]
+}

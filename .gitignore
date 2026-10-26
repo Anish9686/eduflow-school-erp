@@ -1,0 +1,144 @@
+# ============================================================
+# EduFlow ERP Portal — Root .gitignore
+# ============================================================
+
+# ------------------------------------------------------------
+# Environment, Credentials & Local Configuration
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env.local
+*.local
+
+# ------------------------------------------------------------
+# Backend Build Output & Dependencies (Java / Maven / Spring Boot)
+# ------------------------------------------------------------
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Maven Wrapper & Surefire
+.mvn/wrapper/maven-wrapper.jar
+**/surefire-reports/
+**/failsafe-reports/
+
+# JaCoCo Code Coverage Reports
+**/jacoco.exec
+**/target/site/jacoco/
+
+# Spring Boot Developer Tools & Crash Logs
+hs_err_pid*
+replay_pid*
+
+# ------------------------------------------------------------
+# Frontend Dependencies & Build Output (Node / React / Vite)
+# ------------------------------------------------------------
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/coverage/
+**/.vite/
+.turbo/
+
+# Lockfile & Package Manager Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------
+# Runtime Storage & Uploaded Documents
+# Preserve directory structure via .gitkeep
+# ------------------------------------------------------------
+backend/storage/student-documents/*
+!backend/storage/student-documents/.gitkeep
+
+# ------------------------------------------------------------
+# Logs, Temporary Files & Diagnostic Dumps
+# ------------------------------------------------------------
+*.log
+logs/
+*.tmp
+*.temp
+err.txt
+out.txt
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------
+# IDE, Editors & Development Tools
+# ------------------------------------------------------------
+# JetBrains (IntelliJ IDEA)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+bin/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ------------------------------------------------------------
+# Operating System Artifacts
+# ------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------
+# Large Media & Video Assets
+# Reference Videos (Kept locally on disk, excluded from public repo)
+# ------------------------------------------------------------
+docs/reference_videos/
+*.mp4
+*.mov
+*.avi
+
+# ------------------------------------------------------------
+# Tool & Modernization Artifacts
+# ------------------------------------------------------------
+.github/modernize/

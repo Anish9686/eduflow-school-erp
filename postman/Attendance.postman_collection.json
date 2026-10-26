@@ -1,0 +1,398 @@
+{
+  "info": {
+    "name": "ERP Attendance Module",
+    "description": "API verification for student and staff attendance marking, idempotency, duplicate prevention, scope enforcement, corrections, audit history, date locks, and summary.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "teacherToken", "value": "" },
+    { "key": "sessionId", "value": "1" },
+    { "key": "classId", "value": "1" },
+    { "key": "sectionId", "value": "1" },
+    { "key": "studentId", "value": "1" },
+    { "key": "staffId", "value": "1" },
+    { "key": "attendanceId", "value": "" },
+    { "key": "lockId", "value": "" },
+    { "key": "testDate", "value": "2026-10-06" }
+  ],
+  "item": [
+    {
+      "name": "Get attendance session options",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/options/sessions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns session array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get class options",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/options/classes"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get section options for class",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/options/sections?classId={{classId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get roster for marking",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/roster?sessionId={{sessionId}}&classId={{classId}}&sectionId={{sectionId}}&attendanceDate={{testDate}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Roster returned', () => pm.response.to.have.status(200));",
+              "if (pm.response.json().length > 0) pm.collectionVariables.set('studentId', pm.response.json()[0].studentId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mark student attendance (normal marking)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "postman-batch-001" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"classId\": {{classId}},\n  \"sectionId\": {{sectionId}},\n  \"attendanceDate\": \"{{testDate}}\",\n  \"entries\": [\n    {\n      \"studentId\": {{studentId}},\n      \"status\": \"PRESENT\",\n      \"remarks\": \"Marked via Postman\"\n    }\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/students/mark"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Attendance marked or already present', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const body = pm.response.json();",
+              "if (body.records && body.records.length > 0) {",
+              "  pm.collectionVariables.set('attendanceId', body.records[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Duplicate marking idempotency contract check",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "postman-batch-001" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"classId\": {{classId}},\n  \"sectionId\": {{sectionId}},\n  \"attendanceDate\": \"{{testDate}}\",\n  \"entries\": [\n    {\n      \"studentId\": {{studentId}},\n      \"status\": \"PRESENT\",\n      \"remarks\": \"Marked via Postman\"\n    }\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/students/mark"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Duplicate handled idempotently', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const body = pm.response.json();",
+              "pm.test('Already marked count recorded', () => pm.expect(body.alreadyMarked).to.be.at.least(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Query attendance records with filters",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/students?sessionId={{sessionId}}&classId={{classId}}&sectionId={{sectionId}}&from={{testDate}}&to={{testDate}}&status=PRESENT"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Records returned', () => pm.response.to.have.status(200));",
+              "pm.test('Array received', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get attendance summary stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/summary?attendanceDate={{testDate}}&sessionId={{sessionId}}&classId={{classId}}&sectionId={{sectionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Summary stats returned', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Has present and total fields', () => {",
+              "  pm.expect(body).to.have.property('total');",
+              "  pm.expect(body).to.have.property('present');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Correct attendance record",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"LATE\",\n  \"reason\": \"Bus breakdown caused late arrival\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/students/{{attendanceId}}/corrections"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.collectionVariables.get('attendanceId')) {",
+              "  pm.test('Correction succeeded', () => pm.response.to.have.status(200));",
+              "  pm.test('Corrected status is LATE', () => pm.expect(pm.response.json().status).to.eql('LATE'));",
+              "  pm.test('Is corrected flag set', () => pm.expect(pm.response.json().corrected).to.be.true);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get student correction history",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/students/{{attendanceId}}/corrections"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.collectionVariables.get('attendanceId')) {",
+              "  pm.test('History returned', () => pm.response.to.have.status(200));",
+              "  pm.test('Contains correction entry', () => pm.expect(pm.response.json().length).to.be.at.least(1));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lock attendance date",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scope\": \"STUDENT\",\n  \"sessionId\": {{sessionId}},\n  \"attendanceDate\": \"2026-10-31\",\n  \"reason\": \"Month end attendance closure\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/locks"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Date locked', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "  pm.collectionVariables.set('lockId', pm.response.json().id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marking on locked date rejected with 409",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"classId\": {{classId}},\n  \"sectionId\": {{sectionId}},\n  \"attendanceDate\": \"2026-10-31\",\n  \"entries\": [\n    {\n      \"studentId\": {{studentId}},\n      \"status\": \"PRESENT\"\n    }\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/students/mark"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Locked date rejected', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unlock attendance date",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/locks/{{lockId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.collectionVariables.get('lockId')) {",
+              "  pm.test('Date unlocked', () => pm.expect([200, 204]).to.include(pm.response.code));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mark staff attendance",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "postman-staff-001" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"attendanceDate\": \"{{testDate}}\",\n  \"entries\": [\n    {\n      \"staffId\": {{staffId}},\n      \"status\": \"PRESENT\",\n      \"remarks\": \"On duty\"\n    }\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/attendance/staff/mark"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Staff attendance marked or existing', () => pm.expect([200, 201]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Query staff attendance",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/attendance/staff?from={{testDate}}&to={{testDate}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Staff records returned', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unauthenticated attendance request returns 401",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/attendance/options/sessions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Unauthenticated request denied', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

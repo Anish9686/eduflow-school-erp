@@ -1,0 +1,96 @@
+.operations-page {
+  display: grid;
+  gap: 23px;
+  min-width: 0;
+}
+
+.operations-page .ds-tab-panel {
+  padding: 16px 0 0;
+  border: 0;
+}
+
+.operations-page .ds-tabs {
+  gap: .5rem;
+  padding-bottom: .25rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.operations-page .ds-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 0;
+  padding: .6rem 1.1rem;
+  border: 1px solid transparent;
+  border-bottom-color: transparent;
+  border-radius: 8px;
+  color: var(--text-secondary, #64748b);
+  background: transparent;
+  font-size: .875rem;
+  font-weight: 600;
+  transition: all .18s cubic-bezier(.4, 0, .2, 1);
+}
+
+.operations-page .ds-tabs button:hover:not([aria-selected="true"]) {
+  color: var(--text-primary, var(--text));
+  background: var(--bg-hover, rgba(0, 0, 0, .04));
+}
+
+.operations-page .ds-tabs button[aria-selected="true"] {
+  color: var(--color-primary, #4f46e5);
+  background: var(--color-primary-light, rgba(79, 70, 229, .08));
+  border-color: var(--color-primary-border, rgba(79, 70, 229, .25));
+  border-bottom-color: var(--color-primary-border, rgba(79, 70, 229, .25));
+  box-shadow: 0 1px 3px rgba(79, 70, 229, .1);
+}
+
+.operations-page .ds-tab-icon {
+  margin-right: 0;
+}
+
+.operations-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.operations-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0;
+}
+
+.operations-panel-head h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.operations-panel-head p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.operations-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.operations-form .ds-field {
+  min-width: 0;
+}
+
+.operations-form .ds-field:has(textarea) {
+  grid-column: 1 / -1;
+}
+.operations-panel { border-radius: var(--radius-lg); }
+.operations-form { gap: .9rem; }
+
+@media (max-width: 720px) {
+  .operations-form { grid-template-columns: 1fr; }
+  .operations-form .ds-field:has(textarea) { grid-column: auto; }
+}

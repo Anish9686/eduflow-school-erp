@@ -1,0 +1,40 @@
+.reports-page { display: flex; flex-direction: column; gap: 1.25rem; width: 100%; }
+.reports-heading { display: flex; justify-content: space-between; align-items: flex-end; }
+.reports-eyebrow { color: var(--color-primary, #8992ff); font-size: .75rem; font-weight: 800; letter-spacing: .14em; }
+.reports-heading h1 { margin: .4rem 0; font-size: 2.5rem; }
+.reports-heading p, .reports-results-heading p { color: var(--text-muted, #97a3b8); margin: 0; }
+.reports-panel, .reports-results { border: 1px solid var(--border, #2b3547); background: var(--surface, #191f2d); border-radius: 1rem; padding: 1.25rem; }
+.reports-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
+.reports-field { display: flex; flex-direction: column; gap: .45rem; color: var(--text-muted, #aab4c5); font-size: .85rem; }
+.reports-field input, .reports-field select { min-height: 2.7rem; padding: .6rem .75rem; color: var(--text, #f5f6fa); background: var(--surface-raised, #1c2433); border: 1px solid var(--border, #344055); border-radius: .65rem; }
+.reports-results-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.reports-results-heading h2 { margin: 0 0 .35rem; font-size: 1.2rem; }
+.reports-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.reports-actions button, .reports-pagination button { color: var(--text, #f5f6fa); background: var(--surface-raised, #20293a); border: 1px solid var(--border, #344055); border-radius: .6rem; padding: .55rem .85rem; cursor: pointer; }
+.reports-actions button:disabled, .reports-pagination button:disabled { opacity: .5; cursor: not-allowed; }
+.reports-table-wrap { overflow-x: auto; }
+.reports-table-wrap table { width: 100%; border-collapse: collapse; text-align: left; }
+.reports-table-wrap th, .reports-table-wrap td { padding: .8rem .7rem; border-bottom: 1px solid var(--border, #2b3547); white-space: nowrap; }
+.reports-table-wrap th { color: var(--text-muted, #aab4c5); font-size: .8rem; }
+.reports-pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; color: var(--text-muted, #aab4c5); font-size: .9rem; }
+.reports-pagination div { display: flex; gap: .5rem; }
+.reports-state { padding: 2.5rem 1rem; text-align: center; color: var(--text-muted, #aab4c5); }
+.reports-error { padding: 1rem; color: var(--danger); background: var(--danger-bg); border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border)); border-radius: .75rem; }
+.reports-panel, .reports-results { border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.reports-heading h1 { font-size: clamp(1.75rem, 3vw, 2.15rem); letter-spacing: -.035em; }
+.reports-field { color: var(--text); }
+.reports-field input, .reports-field select { border-radius: var(--radius-md); }
+.reports-actions button, .reports-pagination button { border-radius: var(--radius-md); transition: background var(--transition-fast), border-color var(--transition-fast); }
+.reports-actions button:hover:not(:disabled), .reports-pagination button:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--color-primary-border); }
+.reports-table-wrap th { background: var(--surface-muted); }
+.reports-table-wrap tbody tr:hover { background: var(--surface-muted); }
+.reports-panel, .reports-results { background: var(--surface); border-color: var(--border); }
+.reports-field input, .reports-field select { color: var(--text); background: var(--surface); border-color: var(--border); }
+.reports-actions button, .reports-pagination button { color: var(--text); background: var(--surface); border-color: var(--border); }
+@media (max-width: 480px) {
+  .reports-panel, .reports-results { padding: 1rem; }
+  .reports-panel { grid-template-columns: minmax(0, 1fr); }
+  .reports-pagination div { width: 100%; }
+  .reports-pagination button { flex: 1; }
+}
+@media (max-width: 700px) { .reports-results-heading { align-items: flex-start; flex-direction: column; } .reports-pagination { align-items: flex-start; gap: .75rem; flex-direction: column; } }

@@ -12,7 +12,8 @@ INSERT IGNORE INTO permissions (code, description, module) VALUES
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM (
-    SELECT 'ADMIN' role_code, 'STUDENT:READ' permission_code UNION ALL
+    SELECT CAST('ADMIN' AS CHAR(50) CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS role_code,
+           CAST('STUDENT:READ' AS CHAR(100) CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS permission_code UNION ALL
     SELECT 'ADMIN','STUDENT:CREATE' UNION ALL SELECT 'ADMIN','STUDENT:UPDATE' UNION ALL
     SELECT 'ADMIN','ACADEMIC:READ' UNION ALL SELECT 'ADMIN','ACADEMIC:MANAGE' UNION ALL
     SELECT 'ADMIN','TIMETABLE:READ' UNION ALL SELECT 'ADMIN','TIMETABLE:MANAGE' UNION ALL
@@ -77,8 +78,8 @@ FROM (
     SELECT 'STUDENT','TIMETABLE:READ' UNION ALL SELECT 'STUDENT','HOMEWORK:READ' UNION ALL SELECT 'STUDENT','SYLLABUS:READ' UNION ALL
     SELECT 'STUDENT','ATTENDANCE:READ' UNION ALL SELECT 'STUDENT','REPORT:EXPORT' UNION ALL SELECT 'STUDENT','LIBRARY:READ' UNION ALL SELECT 'STUDENT','SETTINGS:READ'
 ) baseline
-JOIN roles r ON r.code = baseline.role_code
-JOIN permissions p ON p.code = baseline.permission_code
+JOIN roles r ON r.code = baseline.role_code COLLATE utf8mb4_unicode_ci
+JOIN permissions p ON p.code = baseline.permission_code COLLATE utf8mb4_unicode_ci
 WHERE NOT EXISTS (
     SELECT 1 FROM role_permissions existing
     WHERE existing.role_id = r.id AND existing.permission_id = p.id

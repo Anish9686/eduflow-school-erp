@@ -222,7 +222,8 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM (
     -- SUPER_ADMIN: Full access
-    SELECT 'SUPER_ADMIN' role_code, 'EXAM:READ' permission_code UNION ALL
+    SELECT CAST('SUPER_ADMIN' AS CHAR(50) CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS role_code,
+           CAST('EXAM:READ' AS CHAR(100) CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS permission_code UNION ALL
     SELECT 'SUPER_ADMIN','EXAM:CREATE' UNION ALL SELECT 'SUPER_ADMIN','EXAM:UPDATE' UNION ALL
     SELECT 'SUPER_ADMIN','EXAM:DELETE' UNION ALL SELECT 'SUPER_ADMIN','EXAM:SCHEDULE' UNION ALL
     SELECT 'SUPER_ADMIN','RESULT:READ' UNION ALL SELECT 'SUPER_ADMIN','RESULT:CREATE' UNION ALL
@@ -255,8 +256,8 @@ FROM (
     -- STUDENT: Read-only published results for self
     SELECT 'STUDENT','RESULT:READ' UNION ALL SELECT 'STUDENT','RESULT:REPORT:READ'
 ) baseline
-JOIN roles r ON r.code = baseline.role_code
-JOIN permissions p ON p.code = baseline.permission_code
+JOIN roles r ON r.code = baseline.role_code COLLATE utf8mb4_unicode_ci
+JOIN permissions p ON p.code = baseline.permission_code COLLATE utf8mb4_unicode_ci
 WHERE NOT EXISTS (
     SELECT 1 FROM role_permissions existing
     WHERE existing.role_id = r.id AND existing.permission_id = p.id

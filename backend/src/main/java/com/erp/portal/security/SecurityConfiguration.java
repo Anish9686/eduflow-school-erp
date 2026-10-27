@@ -86,7 +86,7 @@ public class SecurityConfiguration {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "X-Correlation-ID", "X-Trace-Id"));
         configuration.setExposedHeaders(List.of("X-Trace-Id", "X-Correlation-ID", "Content-Disposition"));

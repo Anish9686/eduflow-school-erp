@@ -196,6 +196,9 @@ CREATE TABLE application_settings (
 -- MySQL has no partial unique indexes. A NULL generated guard leaves historic
 -- non-active rows unrestricted while enforcing one ACTIVE occupant per bed.
 ALTER TABLE hostel_allocations
+    DROP FOREIGN KEY fk_ha_room;
+
+ALTER TABLE hostel_allocations
     DROP INDEX uq_hostel_bed_active;
 
 ALTER TABLE hostel_allocations
@@ -205,4 +208,7 @@ ALTER TABLE hostel_allocations
 ALTER TABLE hostel_allocations
     ADD UNIQUE KEY uq_hostel_active_bed_session (room_id, bed_no, session_id, active_bed_guard)
         COMMENT 'Prevent concurrent active occupants of one bed; retain any number of inactive history rows';
+
+ALTER TABLE hostel_allocations
+    ADD CONSTRAINT fk_ha_room FOREIGN KEY (room_id) REFERENCES hostel_rooms(id);
 

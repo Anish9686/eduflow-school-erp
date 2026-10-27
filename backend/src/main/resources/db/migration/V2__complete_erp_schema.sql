@@ -200,7 +200,7 @@ ALTER TABLE hostel_allocations
 
 ALTER TABLE hostel_allocations
     ADD COLUMN active_bed_guard TINYINT
-        GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END) STORED;
+        GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END) VIRTUAL;
 
 ALTER TABLE hostel_allocations
     ADD UNIQUE KEY uq_hostel_active_bed_session (room_id, bed_no, session_id, active_bed_guard)
